@@ -1,6 +1,8 @@
 import os
 import argparse
 
+from code_compass import CodeCompass
+
 DEFAULT_CODE_FOLDER = "../nodatime/src/NodaTime"  # example csharp library for testing
 
 
@@ -22,8 +24,12 @@ def main():
     print(f"Error: Code directory not found: {args.code_dir}")
     return
 
+  ## Initialization logic
+  print("\n--- Initializing Code Compass ---")
+  documents = CodeCompass.load_documents(args.code_dir)
+
   ## Query Loop
-  print("\n--- Code Compass ---")
+  print("\n--- Welcome to Code Compass ---")
   print(
     "Enter your questions about the provided codebase. Type 'exit' or 'quit' to stop."
   )
