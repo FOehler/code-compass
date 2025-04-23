@@ -2,6 +2,10 @@ from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough, RunnableParallel
+from langchain_core.output_parsers import StrOutputParser
 
 
 class CodeCompass:
@@ -53,3 +57,61 @@ class CodeCompass:
     except Exception as e:
       print(f"Error creating vector store: {e}")
       return None
+
+  def setup_rag_workflow(vectorstore):
+    """Sets up the RAG workflow"""
+    if vectorstore is None:
+      print("Vector store not available. Cannot set up RAG chain.")
+      return None
+
+    print("Setting up RAG workflow...")
+    try:
+      llm = ChatGoogleGenerativeAI(
+        model="gemini-2.0-flash"
+      )  # model could be made configurable
+    except Exception as e:
+      print(f"Error initializing Gemini LLM: {e}")
+      print("Please ensure your GOOGLE_API_KEY environment variable is set correctly.")
+      return None
+
+    retriever = vectorstore.as_retriever(
+      search_type="similarity",
+      search_kwargs={"k": 5},  # retrieve most similar 5 chunks
+    )
+
+    prompt_template = """
+      You are an AI assistant specialized in analyzing C# code.
+      Answer the following question based *only* on the provided context:
+
+      Context:
+      {context}
+
+      Question:
+      {question}
+
+      Answer:
+      """
+
+    prompt = ChatPromptTemplate.from_template(prompt_template)
+
+    # Define how to format the retrieved documents
+    def format_documents(docs):
+      return "\n\n".join(doc.page_content for doc in docs)
+
+    # Create the RAG chain using LangChain Expression Language
+    # 1. RunnableParallel allows parallel operations
+    # - It assembles the context by taking the output from the retriever and merging it into a single string
+    # - The question is passed through without any modification
+    # 2. The output of runnable parallel is piped as an input to the prompt
+    # 3. The prompt is fed into the llm
+    # 4. The StrOutputParser extracts the string from the LLM
+    rag_workflow = (
+      RunnableParallel(
+        {"context": retriever | format_documents, "question": RunnablePassthrough()}
+      )
+      | prompt
+      | llm
+      | StrOutputParser()
+    )
+
+    return rag_workflow

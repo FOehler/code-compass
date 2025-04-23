@@ -1,9 +1,13 @@
 import os
 import argparse
+from dotenv import load_dotenv
+
 
 from code_compass import CodeCompass
 
 DEFAULT_CODE_FOLDER = "../nodatime/src/NodaTime"  # example csharp library for testing
+
+load_dotenv()
 
 
 def main():
@@ -29,9 +33,18 @@ def main():
   documents = CodeCompass.load_documents(args.code_dir)
   if documents:
     document_chunks = CodeCompass.split_documents(documents)
-    vectorstore = CodeCompass.create_vector_store(document_chunks)
   else:
-    print("No documents loaded, cannot proceed.")
+    print("No documents loaded. Exiting.")
+    return
+
+  vectorstore = CodeCompass.create_vector_store(document_chunks)
+  if not vectorstore:
+    print("Failed to initialize vector store. Exiting.")
+    return
+
+  rag_workflow = CodeCompass.setup_rag_workflow(vectorstore)
+  if not rag_workflow:
+    print("Failed to set up RAG workflow. Exiting.")
     return
 
   ## Query Loop
@@ -51,7 +64,7 @@ def main():
       print("Thinking...")
 
       # Invoke the model here
-      answer = "Dummy Answer"
+      answer = rag_workflow.invoke(query)
 
       print("\nAnswer:")
       print(answer)
