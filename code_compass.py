@@ -1,4 +1,5 @@
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
 
 
 class CodeCompass:
@@ -23,3 +24,15 @@ class CodeCompass:
     except Exception as e:
       print(f"Error loading files from '{folder_path}': {e}")
       return []
+
+  def split_documents(documents):
+    """Splits documents into chunks for improved emedding into the vector database"""
+    print("Splitting documents for embedding...")
+    csharp_splitter = RecursiveCharacterTextSplitter.from_language(  # again assume csharp for now
+      language=Language.CSHARP,
+      chunk_size=1500,  # suggested chunk size and overlap by Gemini, look into optimization
+      chunk_overlap=150,
+    )
+    document_chunks = csharp_splitter.split_documents(documents)
+    print(f"Split into {len(document_chunks)} chunks.")
+    return document_chunks

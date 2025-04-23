@@ -27,9 +27,14 @@ def main():
   ## Initialization logic
   print("\n--- Initializing Code Compass ---")
   documents = CodeCompass.load_documents(args.code_dir)
+  if documents:
+    document_chunks = CodeCompass.split_documents(documents)
+  else:
+    print("No documents loaded, cannot proceed.")
+    return
 
   ## Query Loop
-  print("\n--- Welcome to Code Compass ---")
+  print("\n--- Code Compass ---")
   print(
     "Enter your questions about the provided codebase. Type 'exit' or 'quit' to stop."
   )
