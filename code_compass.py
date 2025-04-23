@@ -1,5 +1,7 @@
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.vectorstores import FAISS
 
 
 class CodeCompass:
@@ -36,3 +38,18 @@ class CodeCompass:
     document_chunks = csharp_splitter.split_documents(documents)
     print(f"Split into {len(document_chunks)} chunks.")
     return document_chunks
+
+  def create_vector_store(document_chunks):
+    """Creates a FAISS vector store from document chunks"""
+    print("Preparing embedding model...")
+    embeddings = HuggingFaceEmbeddings(
+      model_name="sentence-transformers/all-MiniLM-L6-v2"
+    )  # maybe make embedding model configurable
+    try:
+      vectorstore = FAISS.from_documents(document_chunks, embeddings)
+      vectorstore.save_local("faiss_document_index")  # maybe also make configurable
+      print("Vector store created and saved.")
+      return vectorstore
+    except Exception as e:
+      print(f"Error creating vector store: {e}")
+      return None

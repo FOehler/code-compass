@@ -29,6 +29,7 @@ def main():
   documents = CodeCompass.load_documents(args.code_dir)
   if documents:
     document_chunks = CodeCompass.split_documents(documents)
+    vectorstore = CodeCompass.create_vector_store(document_chunks)
   else:
     print("No documents loaded, cannot proceed.")
     return
