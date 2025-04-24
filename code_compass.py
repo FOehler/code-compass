@@ -7,15 +7,22 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough, RunnableParallel
 from langchain_core.output_parsers import StrOutputParser
 
+from helpers import identify_language, get_file_ending
+
 
 class CodeCompass:
-  def load_documents(folder_path: str):
+  def identify_language(folder_path: str):
+    language = identify_language(folder_path)
+    print(f"Detected language: {language}")
+    return language
+
+  def load_documents(folder_path: str, language: Language):
     """Loads files from the specified directory."""
     print(f"Loading files from: {folder_path}")
 
     loader = DirectoryLoader(
       folder_path,
-      glob="**/*.cs",  # for now assume csharp files
+      glob=f"**/*{get_file_ending(language)}",
       loader_cls=TextLoader,  # loader for text files
       loader_kwargs={"autodetect_encoding": True},
       show_progress=True,
@@ -23,7 +30,7 @@ class CodeCompass:
     try:
       documents = loader.load()
       if not documents:
-        print(f"No '.cs' files found in '{folder_path}'.")
+        print(f"No '.{get_file_ending(language)}' files found in '{folder_path}'.")
         return []
       print(f"Loaded {len(documents)} files from '{folder_path}'.")
       return documents
@@ -31,11 +38,11 @@ class CodeCompass:
       print(f"Error loading files from '{folder_path}': {e}")
       return []
 
-  def split_documents(documents):
+  def split_documents(documents, language):
     """Splits documents into chunks for improved emedding into the vector database"""
     print("Splitting documents for embedding...")
-    csharp_splitter = RecursiveCharacterTextSplitter.from_language(  # again assume csharp for now
-      language=Language.CSHARP,
+    csharp_splitter = RecursiveCharacterTextSplitter.from_language(
+      language=language,
       chunk_size=1500,  # suggested chunk size and overlap by Gemini, look into optimization
       chunk_overlap=150,
     )

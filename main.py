@@ -2,8 +2,8 @@ import os
 import argparse
 from dotenv import load_dotenv
 
-
 from code_compass import CodeCompass
+from helpers import get_language_from_string
 
 DEFAULT_CODE_FOLDER = "../nodatime/src/NodaTime"  # example csharp library for testing
 
@@ -12,14 +12,18 @@ load_dotenv()
 
 def main():
   ## Parse arguments
-  parser = argparse.ArgumentParser(
-    description="Query a C# codebase using RAG and Gemini."
-  )
+  parser = argparse.ArgumentParser(description="Query a codebase using RAG and Gemini.")
   parser.add_argument(
     "--code-dir",
     type=str,
     default=DEFAULT_CODE_FOLDER,
-    help=f"Directory containing the C# code files (default: {DEFAULT_CODE_FOLDER})",
+    help=f"Directory containing the code files (default: {DEFAULT_CODE_FOLDER})",
+  )
+  parser.add_argument(
+    "--language",
+    type=str,
+    default=None,
+    help="Override language used in the code files (default: Auto detect language)",
   )
 
   args = parser.parse_args()
@@ -30,9 +34,18 @@ def main():
 
   ## Initialization logic
   print("\n--- Initializing Code Compass ---")
-  documents = CodeCompass.load_documents(args.code_dir)
+  if not args.language:
+    language = CodeCompass.identify_language(args.code_dir)
+  else:
+    language = get_language_from_string(args.language)
+    print(f"Language override active for {language}")
+  if not language:
+    print("Failed to identify language. Exiting.")
+    return
+
+  documents = CodeCompass.load_documents(args.code_dir, language)
   if documents:
-    document_chunks = CodeCompass.split_documents(documents)
+    document_chunks = CodeCompass.split_documents(documents, language)
   else:
     print("No documents loaded. Exiting.")
     return
